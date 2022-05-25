@@ -41,6 +41,8 @@ void USubSystemManager::Host(FString ServerName, const FHostingData& InHostingDa
 
 	if (!SessionInterface.IsValid()) return;
 
+	bHostApplied = true;
+
 	HostingData = InHostingData;
 
 	CurrentServerName = ServerName;
@@ -91,11 +93,13 @@ void USubSystemManager::OnCreateSessionComplete(FName SessionName, bool Success)
 
 	UE_LOG(LogTemp, Warning, TEXT("created session"));
 
+	bHostApplied = false;
+
 	UWorld* World = GetWorld();
 
 	if (!ensure(World != nullptr)) return;
 
-	FString InURL = "/Game/Maps/Lobby";
+	FString InURL = "/Game/Maps/Lobby?listen";
 
 	World->ServerTravel(InURL);
 }
@@ -116,7 +120,9 @@ void USubSystemManager::OnDestroySessionComplete(FName SessionName, bool Success
 
 	if (Success) {
 		UE_LOG(LogTemp, Warning, TEXT("Session Destroyed Successfuly!"));
-		CreateSession();
+
+		if(bHostApplied)
+			CreateSession();
 	}
 
 }
@@ -189,8 +195,8 @@ void USubSystemManager::OnJoinSessionComplete(FName SessionName, EOnJoinSessionC
 		return;
 	}
 
-	//UEngine* Engine = GetEngine();
-	//Engine->AddOnScreenDebugMessage(0, 5, FColor::Green, FString::Printf(TEXT("Joining %s"), *Address));
+	UEngine* Engine = GEngine;
+	Engine->AddOnScreenDebugMessage(0, 5, FColor::Green, FString::Printf(TEXT("Joining %s"), *Address));
 
 	APlayerController* PlayerController = UGameplayStatics::GetGameInstance(GetWorld())->GetFirstLocalPlayerController();
 	if (!ensure(PlayerController != nullptr)) return;

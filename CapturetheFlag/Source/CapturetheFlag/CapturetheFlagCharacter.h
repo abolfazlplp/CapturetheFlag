@@ -14,6 +14,13 @@ class UMotionControllerComponent;
 class UAnimMontage;
 class USoundBase;
 
+UENUM(BlueprintType)
+enum ETeam
+{
+	Blue UMETA(DisplayName = "Blue"),
+	Red UMETA(DisplayName = "Red")
+};
+
 UCLASS(config=Game)
 class ACapturetheFlagCharacter : public ACharacter
 {
@@ -85,6 +92,9 @@ public:
 	/** Whether to use motion controller location for aiming. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	uint8 bUsingMotionControllers : 1;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Team)
+	TEnumAsByte<ETeam> PlayerTeam;
 
 protected:
 	

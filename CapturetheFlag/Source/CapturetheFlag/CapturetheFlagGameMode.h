@@ -13,6 +13,8 @@ class ACapturetheFlagGameMode : public AGameModeBase
 
 public:
 	ACapturetheFlagGameMode();
+
+	virtual void PostLogin(APlayerController* NewPlayer) override;
 };
 
 

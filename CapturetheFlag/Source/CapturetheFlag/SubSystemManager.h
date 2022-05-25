@@ -104,6 +104,8 @@ private:
 	TSharedPtr<class FOnlineSessionSearch> SessionSearch;
 	FString CurrentServerName;
 
+	bool bHostApplied = false;
+
 	//************************** Private Functions **************************
 private:
 	void OnCreateSessionComplete(FName SessionName, bool Success);
