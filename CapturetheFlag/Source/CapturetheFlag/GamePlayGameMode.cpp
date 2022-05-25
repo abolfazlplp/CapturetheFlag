@@ -3,3 +3,12 @@
 
 #include "GamePlayGameMode.h"
 
+void AGamePlayGameMode::PostLogin(APlayerController* NewPlayer) 
+{
+	Super::PostLogin(NewPlayer);
+}
+
+void AGamePlayGameMode::Logout(AController* Exiting)
+{
+	Super::Logout(Exiting);
+}

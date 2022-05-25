@@ -11,6 +11,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "MotionControllerComponent.h"
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
+#include "Net\UnrealNetwork.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
@@ -89,6 +90,22 @@ void ACapturetheFlagCharacter::BeginPlay()
 	// Call the base class  
 	Super::BeginPlay();
 
+	//ResetHealth
+	ResetHealth();
+
+	if(HasAuthority())
+	{
+		PlayerTeam = ETeam::Blue;
+		FString TeamString = "Player Team Is: " + UEnum::GetValueAsString(PlayerTeam);
+		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, TeamString);
+	}
+	else
+	{
+		PlayerTeam = ETeam::Red;
+		FString TeamString = "Player Team Is: " + UEnum::GetValueAsString(PlayerTeam);
+		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, TeamString);
+	}
+
 	//Attach gun mesh component to Skeleton, doing it here because the skeleton is not yet created in the constructor
 	FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
 
@@ -103,6 +120,14 @@ void ACapturetheFlagCharacter::BeginPlay()
 		VR_Gun->SetHiddenInGame(true, true);
 		Mesh1P->SetHiddenInGame(false, true);
 	}
+}
+
+void ACapturetheFlagCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
+{
+	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
+
+	DOREPLIFETIME(ACapturetheFlagCharacter, PlayerTeam);
+	DOREPLIFETIME(ACapturetheFlagCharacter, bCarryFlag);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -297,4 +322,9 @@ bool ACapturetheFlagCharacter::EnableTouchscreenMovement(class UInputComponent* 
 	}
 	
 	return false;
+}
+
+void ACapturetheFlagCharacter::ResetHealth()
+{
+	CurrentPlayerHealth = PlayerHealth;
 }

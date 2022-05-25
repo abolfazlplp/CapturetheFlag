@@ -14,10 +14,10 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 
 	++PlayersNum;
 
-	if (ACapturetheFlagCharacter* Player = Cast<ACapturetheFlagCharacter>(NewPlayer->GetPawn()))
+	/*if (ACapturetheFlagCharacter* Player = Cast<ACapturetheFlagCharacter>(NewPlayer->GetPawn()))
 	{
-		Player->PlayerTeam = PlayersNum / 2 == 0 ? ETeam::Red : ETeam::Blue;
-	}
+		Player->PlayerTeam = PlayersNum % 2 == 0 ? ETeam::Red : ETeam::Blue;
+	}*/
 
 	if (PlayersNum >= 2)
 	{

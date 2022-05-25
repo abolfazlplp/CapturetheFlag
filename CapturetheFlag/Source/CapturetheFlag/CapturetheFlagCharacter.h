@@ -64,6 +64,8 @@ public:
 protected:
 	virtual void BeginPlay();
 
+	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+
 public:
 	/** Base turn rate, in deg/sec. Other scaling may affect final turn rate. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category=Camera)
@@ -93,8 +95,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	uint8 bUsingMotionControllers : 1;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Team)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly,Replicated, Category = Team)
 	TEnumAsByte<ETeam> PlayerTeam;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadwrite, Category = Health)
+	float PlayerHealth = 100.f;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Health)
+	float CurrentPlayerHealth;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = Flag)
+	bool bCarryFlag = false;
 
 protected:
 	
@@ -153,6 +164,10 @@ public:
 	USkeletalMeshComponent* GetMesh1P() const { return Mesh1P; }
 	/** Returns FirstPersonCameraComponent subobject **/
 	UCameraComponent* GetFirstPersonCameraComponent() const { return FirstPersonCameraComponent; }
+
+private:
+	void ResetHealth();
+
 
 };
 
