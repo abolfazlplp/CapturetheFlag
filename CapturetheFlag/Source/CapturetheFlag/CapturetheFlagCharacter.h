@@ -4,6 +4,9 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+
+#include "DamageInterface.h"
+
 #include "CapturetheFlagCharacter.generated.h"
 
 class UInputComponent;
@@ -22,7 +25,7 @@ enum ETeam
 };
 
 UCLASS(config=Game)
-class ACapturetheFlagCharacter : public ACharacter
+class ACapturetheFlagCharacter : public ACharacter, public IDamageInterface
 {
 	GENERATED_BODY()
 
@@ -107,6 +110,9 @@ public:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = Flag)
 	bool bCarryFlag = false;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = Flag)
+	class AFlag* CarryingFlag = nullptr;
+
 protected:
 	
 	/** Fires a projectile. */
@@ -145,6 +151,13 @@ protected:
 	void EndTouch(const ETouchIndex::Type FingerIndex, const FVector Location);
 	void TouchUpdate(const ETouchIndex::Type FingerIndex, const FVector Location);
 	TouchData	TouchItem;
+
+public:
+	UFUNCTION(Server, Reliable)
+	void Server_Fire();
+	void Server_Fire_Implementation();
+
+	virtual void DeliverDamage(float DamageAmount, AActor* DamageCauser) override;
 	
 protected:
 	// APawn interface

@@ -1,6 +1,5 @@
 // Fill out your copyright notice in the Description page of Project Settings.
 
-
 #include "Flag.h"
 #include "FlagBase.h"
 #include "CapturetheFlagCharacter.h"
@@ -44,32 +43,60 @@ void AFlag::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimePro
 	DOREPLIFETIME(AFlag, CurrentOwner);
 }
 
-void AFlag::Server_ReturnFlag_Implementation(ACapturetheFlagCharacter* Player)
+void AFlag::Server_CaptureFlag_Implementation(ACapturetheFlagCharacter* Player)
+{
+	Multicast_CaptureFlag(Player);
+}
+
+void AFlag::Multicast_CaptureFlag_Implementation(ACapturetheFlagCharacter* Player)
 {
 	if (!Player) return;
 
-	if (CurrentOwner)
-	{
-		if (Player->PlayerTeam == CurrentOwner->FlagBaseTeam)
-		{
-			SetActorTransform(CurrentOwner->GetActorTransform());
-			CurrentOwner->bHasFlag = true;
-		}
-	}
+	Player->bCarryFlag = true;
+	Player->CarryingFlag = this;
+	CurrentOwner->bHasFlag = false;
 
-	//AFlagBase* OwnerBase = Cast<AFlagBase>(GetOwner())
+	Mesh->SetVisibility(false);
+	BoxCollision->Activate(false);
 }
+
+void AFlag::Server_ReturnFlag_Implementation()
+{
+	Multicast_ReturnFlag();
+}
+
+void AFlag::Multicast_ReturnFlag_Implementation()
+{
+	Mesh->SetVisibility(true);
+	BoxCollision->Activate(true);
+	CurrentOwner->bHasFlag = true;
+	SetActorTransform(CurrentOwner->GetActorTransform());
+}
+
+void AFlag::Server_DropFlag_Implementation(ACapturetheFlagCharacter* Player)
+{
+	Multicast_DropFlag(Player);
+}
+
+void AFlag::Multicast_DropFlag_Implementation(ACapturetheFlagCharacter* Player)
+{
+	Mesh->SetVisibility(true);
+	BoxCollision->Activate(true);
+	SetActorTransform(Player->GetActorTransform());
+}
+
 
 // Called when the game starts or when spawned
 void AFlag::BeginPlay()
 {
 	Super::BeginPlay();
 
-	if (CurrentOwner)
+	if (AFlagBase* FlagOwner = Cast<AFlagBase>(GetOwner()))
 	{
+		CurrentOwner = FlagOwner;
 		if (!Mesh) return;
 
-		if (CurrentOwner->FlagBaseTeam == ETeam::Blue)
+		if (FlagOwner->FlagBaseTeam == ETeam::Blue)
 		{
 			UE_LOG(LogTemp,Warning,TEXT("Blue Material Created!"))
 			Mesh->SetMaterial(0, BlueMaterial);
@@ -92,5 +119,22 @@ void AFlag::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AA
 
 	UE_LOG(LogTemp, Warning, TEXT("OverLapped %s"), *PlayerCharacter->GetName())
 
-	Server_ReturnFlag(PlayerCharacter);
+	if (PlayerCharacter->PlayerTeam != CurrentOwner->FlagBaseTeam)
+	{
+			UE_LOG(LogTemp, Warning, TEXT("Enemy Character!"));
+			if (CurrentOwner->PlayerBaseHasFlag(PlayerCharacter))
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Player Base Has Flag!"));
+				Server_CaptureFlag(PlayerCharacter);
+			}
+			else
+			{
+				UE_LOG(LogTemp, Warning, TEXT("Your Flag is Stolen!"));
+			}
+	}
+	else
+	{
+		if (!CurrentOwner->bHasFlag)
+			Server_ReturnFlag();
+	}
 }

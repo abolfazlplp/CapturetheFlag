@@ -4,8 +4,15 @@
 #include "GameFramework/ProjectileMovementComponent.h"
 #include "Components/SphereComponent.h"
 
+#include "DamageInterface.h"
+
+#include "CapturetheFlag\CapturetheFlagCharacter.h"
+
 ACapturetheFlagProjectile::ACapturetheFlagProjectile() 
 {
+	bReplicates = true;
+	SetReplicateMovement(true);
+
 	// Use a sphere as a simple collision representation
 	CollisionComp = CreateDefaultSubobject<USphereComponent>(TEXT("SphereComp"));
 	CollisionComp->InitSphereRadius(5.0f);
@@ -27,17 +34,31 @@ ACapturetheFlagProjectile::ACapturetheFlagProjectile()
 	ProjectileMovement->bRotationFollowsVelocity = true;
 	ProjectileMovement->bShouldBounce = true;
 
-	// Die after 3 seconds by default
-	InitialLifeSpan = 3.0f;
+	// Die after 5 seconds by default
+	InitialLifeSpan = 5.0f;
 }
 
 void ACapturetheFlagProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
-	// Only add impulse and destroy projectile if we hit a physics
-	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr) && OtherComp->IsSimulatingPhysics())
+	
+	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr))
 	{
+		if(OtherComp->IsSimulatingPhysics())
 		OtherComp->AddImpulseAtLocation(GetVelocity() * 100.0f, GetActorLocation());
 
+		if (OtherActor->Implements<UDamageInterface>())
+		{
+			Server_SendDamage(OtherActor);
+		}
+
 		Destroy();
+	}
+}
+
+void ACapturetheFlagProjectile::Server_SendDamage_Implementation(AActor* Actor)
+{
+	if(IDamageInterface* DamageTaker = Cast<IDamageInterface>(Actor))
+	{
+		DamageTaker->DeliverDamage(ProjectileDamage, this);
 	}
 }

@@ -13,6 +13,8 @@
 #include "XRMotionControllerBase.h" // for FXRMotionControllerBase::RightHandSourceId
 #include "Net\UnrealNetwork.h"
 
+#include "Flag.h"
+
 DEFINE_LOG_CATEGORY_STATIC(LogFPChar, Warning, All);
 
 //////////////////////////////////////////////////////////////////////////
@@ -93,7 +95,7 @@ void ACapturetheFlagCharacter::BeginPlay()
 	//ResetHealth
 	ResetHealth();
 
-	if(HasAuthority())
+	if(HasAuthority() && IsLocallyControlled())
 	{
 		PlayerTeam = ETeam::Blue;
 		FString TeamString = "Player Team Is: " + UEnum::GetValueAsString(PlayerTeam);
@@ -128,6 +130,7 @@ void ACapturetheFlagCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProper
 
 	DOREPLIFETIME(ACapturetheFlagCharacter, PlayerTeam);
 	DOREPLIFETIME(ACapturetheFlagCharacter, bCarryFlag);
+	DOREPLIFETIME(ACapturetheFlagCharacter, CarryingFlag);
 }
 
 //////////////////////////////////////////////////////////////////////////
@@ -179,19 +182,25 @@ void ACapturetheFlagCharacter::OnFire()
 			}
 			else
 			{
-				const FRotator SpawnRotation = GetControlRotation();
-				// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
-				const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
-
-				//Set Spawn Collision Handling Override
-				FActorSpawnParameters ActorSpawnParams;
-				ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
-
-				// spawn the projectile at the muzzle
-				World->SpawnActor<ACapturetheFlagProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+				Server_Fire();
 			}
 		}
 	}
+	//		else
+	//		{
+	//			const FRotator SpawnRotation = GetControlRotation();
+	//			// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+	//			const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+
+	//			//Set Spawn Collision Handling Override
+	//			FActorSpawnParameters ActorSpawnParams;
+	//			ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+
+	//			// spawn the projectile at the muzzle
+	//			World->SpawnActor<ACapturetheFlagProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+	//		}
+	//	}
+	//}
 
 	// try and play the sound if specified
 	if (FireSound != nullptr)
@@ -199,16 +208,16 @@ void ACapturetheFlagCharacter::OnFire()
 		UGameplayStatics::PlaySoundAtLocation(this, FireSound, GetActorLocation());
 	}
 
-	// try and play a firing animation if specified
-	if (FireAnimation != nullptr)
-	{
-		// Get the animation object for the arms mesh
-		UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
-		if (AnimInstance != nullptr)
-		{
-			AnimInstance->Montage_Play(FireAnimation, 1.f);
-		}
-	}
+	//// try and play a firing animation if specified
+	//if (FireAnimation != nullptr)
+	//{
+	//	// Get the animation object for the arms mesh
+	//	UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
+	//	if (AnimInstance != nullptr)
+	//	{
+	//		AnimInstance->Montage_Play(FireAnimation, 1.f);
+	//	}
+	//}
 }
 
 void ACapturetheFlagCharacter::OnResetVR()
@@ -239,6 +248,49 @@ void ACapturetheFlagCharacter::EndTouch(const ETouchIndex::Type FingerIndex, con
 		return;
 	}
 	TouchItem.bIsPressed = false;
+}
+
+void ACapturetheFlagCharacter::Server_Fire_Implementation()
+{
+	const FRotator SpawnRotation = GetControlRotation();
+	// MuzzleOffset is in camera space, so transform it to world space before offsetting from the character location to find the final muzzle position
+	const FVector SpawnLocation = ((FP_MuzzleLocation != nullptr) ? FP_MuzzleLocation->GetComponentLocation() : GetActorLocation()) + SpawnRotation.RotateVector(GunOffset);
+
+	//Set Spawn Collision Handling Override
+	FActorSpawnParameters ActorSpawnParams;
+	ActorSpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding;
+
+	UWorld* const World = GetWorld();
+	// spawn the projectile at the muzzle
+	World->SpawnActor<ACapturetheFlagProjectile>(ProjectileClass, SpawnLocation, SpawnRotation, ActorSpawnParams);
+
+	// try and play a firing animation if specified
+	if (FireAnimation != nullptr)
+	{
+		// Get the animation object for the arms mesh
+		UAnimInstance* AnimInstance = Mesh1P->GetAnimInstance();
+		if (AnimInstance != nullptr)
+		{
+			AnimInstance->Montage_Play(FireAnimation, 1.f);
+		}
+	}
+}
+
+void ACapturetheFlagCharacter::DeliverDamage(float DamageAmount, AActor* DamageCauser)
+{
+	CurrentPlayerHealth = FMath::Clamp(CurrentPlayerHealth-DamageAmount,0.f,100.f);
+	UE_LOG(LogTemp,Warning,TEXT("Player Current Health is: %f"),CurrentPlayerHealth)
+
+	if (CurrentPlayerHealth <= 0)
+	{
+		GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
+		if (bCarryFlag)
+		{
+			CarryingFlag->Server_DropFlag(this);
+			bCarryFlag = false;
+			CarryingFlag = nullptr;
+		}
+	}
 }
 
 //Commenting this section out to be consistent with FPS BP template.

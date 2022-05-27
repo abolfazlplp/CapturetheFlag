@@ -4,6 +4,7 @@
 #include "FlagBase.h"
 #include "Net\UnrealNetwork.h"
 #include "Components/BoxComponent.h"
+#include "Kismet/GameplayStatics.h"
 
 #include "Flag.h"
 
@@ -23,7 +24,6 @@ AFlagBase::AFlagBase()
 		BoxCollision->SetCollisionProfileName(TEXT("OverlapAll"));
 		BoxCollision->OnComponentBeginOverlap.AddDynamic(this, &AFlagBase::OnComponentBeginOverlap);
 	}
-
 }
 
 // Called when the game starts or when spawned
@@ -32,7 +32,7 @@ void AFlagBase::BeginPlay()
 	Super::BeginPlay();
 
 	if(HasAuthority())
-		Server_SpawnFlag();
+	Server_SpawnFlag();
 }
 
 void AFlagBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
@@ -42,6 +42,7 @@ void AFlagBase::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetim
 	DOREPLIFETIME(AFlagBase, bHasFlag);
 	DOREPLIFETIME(AFlagBase, Flag);
 	DOREPLIFETIME(AFlagBase, TeamScore);
+	DOREPLIFETIME(AFlagBase, FlagBaseTeam);
 }
 
 void AFlagBase::Server_SpawnFlag_Implementation()
@@ -51,10 +52,11 @@ void AFlagBase::Server_SpawnFlag_Implementation()
 
 void AFlagBase::Multicast_SpawnFlag_Implementation()
 {
-	Flag = GetWorld()->SpawnActor<AFlag>(FlagClass, GetActorTransform());
+	FActorSpawnParameters Params;
+	Params.Owner = this;
+	Flag = GetWorld()->SpawnActor<AFlag>(FlagClass, GetActorTransform(),Params);
 
-	Flag->SetOwner(this);
-	Flag->CurrentOwner = this;
+	//Flag->CurrentOwner = this;
 }
 
 void AFlagBase::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
@@ -65,11 +67,50 @@ void AFlagBase::OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent
 
 	if (!PlayerCharacter) return;
 
-	if (bHasFlag)
+	if (PlayerCharacter->PlayerTeam == FlagBaseTeam)
 	{
+		if (PlayerCharacter->bCarryFlag)
+		{
+			Server_SetTeamScore(PlayerCharacter);
+		}
+	}
+}
 
-	}else
+bool AFlagBase::PlayerBaseHasFlag(ACapturetheFlagCharacter* Player)
+{
+	TArray<AActor*> FoundActors;
+	UGameplayStatics::GetAllActorsOfClass(GetWorld(), AFlagBase::StaticClass(), FoundActors);
+
+	for (AActor* FoundActor : FoundActors)
 	{
-		
+		if (AFlagBase* EnemyBase = Cast<AFlagBase>(FoundActor))
+		{
+			if (Player->PlayerTeam == EnemyBase->FlagBaseTeam)
+			{
+				return EnemyBase->bHasFlag;
+			}
+		}
+	}
+
+	return false;
+}
+
+void AFlagBase::Server_SetTeamScore_Implementation(ACapturetheFlagCharacter* Player)
+{
+	Multicast_SetTeamScore(Player);
+}
+
+void AFlagBase::Multicast_SetTeamScore_Implementation(ACapturetheFlagCharacter* Player)
+{
+	if (!Player) return;
+
+	TeamScore += 1;
+
+	Player->bCarryFlag = false;
+
+	if (Player->CarryingFlag)
+	{
+		Player->CarryingFlag->Server_ReturnFlag();
+		Player->CarryingFlag = nullptr;
 	}
 }
