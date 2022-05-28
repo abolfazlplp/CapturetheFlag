@@ -8,6 +8,8 @@
 #include "GameFramework/PlayerStart.h"
 
 #include "CapturetheFlagPlayerController.h"
+#include "CapturetheFlag\CaptureTheFlagGameInstance.h"
+#include "SubSystemManager.h"
 
 ACapturetheFlagGameMode::ACapturetheFlagGameMode()
 	: Super()
@@ -40,14 +42,17 @@ void ACapturetheFlagGameMode::PostLogin(APlayerController* NewPlayer)
 	}
 }
 
-void ACapturetheFlagGameMode::Server_RespawnRequest_Implementation(FTransform SpawnTransform, ACapturetheFlagPlayerController* PlayerController)
+void ACapturetheFlagGameMode::GameModeTimeOutFunc()
 {
-	if (!PlayerController) return;
+	UWorld* World = GetWorld();
+	if (!ensure(World != nullptr)) return;
 
-	auto SpawnedCharacter =GetWorld()->SpawnActor<ACapturetheFlagCharacter>(DefaultPawnClass, SpawnTransform);
-	PlayerController->Possess(SpawnedCharacter);
-}
+	if (UCaptureTheFlagGameInstance* GameInstance = GetGameInstance<UCaptureTheFlagGameInstance>())
+	{
+		GameInstance->SubsystemManager->DestroySession();
+	}
 
-void ACapturetheFlagGameMode::AfterSpawnDelegate(ACapturetheFlagCharacter* Player, ACapturetheFlagPlayerController* PlayerController)
-{
+	FString InURL = "/Game/Maps/MainMenu";
+	bUseSeamlessTravel = true;
+	World->ServerTravel(InURL);
 }

@@ -22,5 +22,4 @@ private:
 	uint32 PlayersNum = 0;
 	FTimerHandle LobbyTimeOut;
 
-	void LobbyTimeOutFunc();
 };

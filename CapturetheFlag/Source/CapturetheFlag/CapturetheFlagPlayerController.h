@@ -15,9 +15,5 @@ class CAPTURETHEFLAG_API ACapturetheFlagPlayerController : public APlayerControl
 	GENERATED_BODY()
 
 public:
-
-	UFUNCTION(Server, Reliable)
-	void Server_Respawn(FTransform SpawnTransform);
-	void Server_Respawn_Implementation(FTransform SpawnTransform);
 	
 };

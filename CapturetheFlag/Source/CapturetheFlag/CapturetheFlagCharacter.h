@@ -131,6 +131,7 @@ public:
 	float RespawnTime = 5.f;
 
 	FTransform SpawnTransform;
+	FTransform MeshTPInitialTransform;
 
 protected:
 	
@@ -184,6 +185,7 @@ public:
 	void Multicast_PlayAnimMontage(UAnimMontage* AnimMontage);
 	void Multicast_PlayAnimMontage_Implementation(UAnimMontage* AnimMontage);
 
+	void PlayerDead();
 	UFUNCTION(Server, Reliable)
 	void Server_PlayerDead();
 	void Server_PlayerDead_Implementation();
@@ -192,9 +194,14 @@ public:
 	void Multicast_PlayerDead();
 	void Multicast_PlayerDead_Implementation();
 
-	UFUNCTION(Client, Reliable)
-	void Client_PlayerRespawn();
-	void Client_PlayerRespawn_Implementation();
+	void PlayerRespawn();
+	UFUNCTION(Server, Reliable)
+	void Server_PlayerRespawn();
+	void Server_PlayerRespawn_Implementation();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayerRespawn();
+	void Multicast_PlayerRespawn_Implementation();
 
 	virtual void DeliverDamage(float DamageAmount, AActor* DamageCauser) override;
 	
@@ -219,8 +226,6 @@ public:
 
 private:
 	void ResetHealth();
-
-	void AfterPosses();
 
 
 };

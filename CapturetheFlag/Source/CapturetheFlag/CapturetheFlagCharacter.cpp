@@ -54,6 +54,7 @@ ACapturetheFlagCharacter::ACapturetheFlagCharacter()
 	MeshTP->CastShadow = false;
 	MeshTP->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
 	MeshTP->SetRelativeLocation(FVector(0, 0, -90));
+	MeshTPInitialTransform = MeshTP->GetRelativeTransform();
 
 	// Create a gun mesh component
 	FP_Gun = CreateDefaultSubobject<USkeletalMeshComponent>(TEXT("FP_Gun"));
@@ -108,9 +109,44 @@ void ACapturetheFlagCharacter::BeginPlay()
 
 	SpawnTransform = GetActorTransform();
 
-	FTimerHandle TimerHandle;
+	if (HasAuthority() && IsLocallyControlled())
+	{
+		PlayerTeam = ETeam::Blue;
+		FString TeamString = "Player Team Is: " + UEnum::GetValueAsString(PlayerTeam);
+		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, TeamString);
+	}
+	else
+	{
+		PlayerTeam = ETeam::Red;
+		FString TeamString = "Player Team Is: " + UEnum::GetValueAsString(PlayerTeam);
+		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, TeamString);
+	}
 
-	GetWorldTimerManager().SetTimer(TimerHandle, this,&ACapturetheFlagCharacter::AfterPosses, 0.1f, false);
+
+	if (PlayerTeam == ETeam::Blue)
+	{
+		Mesh1P->SetMaterial(0, BlueMaterial);
+		MeshTP->SetMaterial(0, BlueMaterial);
+	}
+	else
+	{
+		MeshTP->SetMaterial(0, RedMaterial);
+		Mesh1P->SetMaterial(0, RedMaterial);
+	}
+		
+	
+		
+	
+
+	//Attach gun mesh component to Skeleton, doing it here because the skeleton is not yet created in the constructor
+	if (IsLocallyControlled())
+	{
+		FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
+	}
+	else
+	{
+		FP_Gun->AttachToComponent(MeshTP, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GunSocket"));
+	}
 
 	// Show or hide the two versions of the gun based on whether or not we're using motion controllers.
 	if (bUsingMotionControllers)
@@ -292,17 +328,30 @@ void ACapturetheFlagCharacter::Multicast_PlayAnimMontage_Implementation(UAnimMon
 	}
 }
 
+void ACapturetheFlagCharacter::PlayerDead()
+{
+		Server_PlayerDead();
+}
+
 void ACapturetheFlagCharacter::Server_PlayerDead_Implementation()
 {
+	GetWorldTimerManager().SetTimer(RespawnTimerHandle, this, &ACapturetheFlagCharacter::Server_PlayerRespawn, RespawnTime, false);
+
+	if (IsLocallyControlled())
+	{
+		Mesh1P->SetVisibility(false);
+		DisableInput(GetWorld()->GetFirstPlayerController());
+		FP_Gun->SetVisibility(false);
+	}
+
 	Multicast_PlayerDead();
 }
 
 void ACapturetheFlagCharacter::Multicast_PlayerDead_Implementation()
 {
+	
 	GetCapsuleComponent()->SetCollisionProfileName("NoCollision");
 	MeshTP->SetAllBodiesSimulatePhysics(true);
-	Mesh1P->SetAllBodiesSimulatePhysics(true);
-	GetCharacterMovement()->DisableMovement();
 
 	if (bCarryFlag)
 	{
@@ -310,22 +359,33 @@ void ACapturetheFlagCharacter::Multicast_PlayerDead_Implementation()
 		bCarryFlag = false;
 		CarryingFlag = nullptr;
 	}
-
-	if(HasAuthority())
-		GetWorldTimerManager().SetTimer(RespawnTimerHandle, this, &ACapturetheFlagCharacter::Client_PlayerRespawn, RespawnTime, false);
+		
 }
 
-void ACapturetheFlagCharacter::Client_PlayerRespawn_Implementation()
+void ACapturetheFlagCharacter::PlayerRespawn()
 {
+}
 
-	auto PlayerController = GetWorld()->GetFirstPlayerController();
-
-	if (ACapturetheFlagPlayerController* CapturePlayerController = Cast< ACapturetheFlagPlayerController>(PlayerController))
+void ACapturetheFlagCharacter::Server_PlayerRespawn_Implementation()
+{
+	if (IsLocallyControlled())
 	{
-		CapturePlayerController->UnPossess();
-		CapturePlayerController->Server_Respawn(SpawnTransform);
+		Mesh1P->SetVisibility(true);
+		FP_Gun->SetVisibility(true);
+		EnableInput(GetWorld()->GetFirstPlayerController());
 	}
+	Multicast_PlayerRespawn();
+}
 
+void ACapturetheFlagCharacter::Multicast_PlayerRespawn_Implementation()
+{
+	ResetHealth();
+
+	GetCapsuleComponent()->SetCollisionProfileName("Pawn");
+	MeshTP->SetAllBodiesSimulatePhysics(false);
+	MeshTP->SetRelativeTransform(MeshTPInitialTransform);
+	MeshTP->AttachToComponent(RootComponent, FAttachmentTransformRules::KeepRelativeTransform);
+	SetActorTransform(SpawnTransform);
 }
 
 void ACapturetheFlagCharacter::DeliverDamage(float DamageAmount, AActor* DamageCauser)
@@ -437,34 +497,4 @@ bool ACapturetheFlagCharacter::EnableTouchscreenMovement(class UInputComponent* 
 void ACapturetheFlagCharacter::ResetHealth()
 {
 	CurrentPlayerHealth = PlayerHealth;
-}
-
-void ACapturetheFlagCharacter::AfterPosses()
-{
-	if (HasAuthority() && IsLocallyControlled())
-	{
-		PlayerTeam = ETeam::Blue;
-		FString TeamString = "Player Team Is: " + UEnum::GetValueAsString(PlayerTeam);
-		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, TeamString);
-		MeshTP->SetMaterial(0, BlueMaterial);
-		Mesh1P->SetMaterial(0, BlueMaterial);
-	}
-	else if(!HasAuthority())
-	{
-		PlayerTeam = ETeam::Red;
-		FString TeamString = "Player Team Is: " + UEnum::GetValueAsString(PlayerTeam);
-		GEngine->AddOnScreenDebugMessage(-1, 10, FColor::Red, TeamString);
-		MeshTP->SetMaterial(0, RedMaterial);
-		Mesh1P->SetMaterial(0, RedMaterial);
-	}
-
-	//Attach gun mesh component to Skeleton, doing it here because the skeleton is not yet created in the constructor
-	if (IsLocallyControlled())
-	{
-		FP_Gun->AttachToComponent(Mesh1P, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GripPoint"));
-	}
-	else
-	{
-		FP_Gun->AttachToComponent(MeshTP, FAttachmentTransformRules(EAttachmentRule::SnapToTarget, true), TEXT("GunSocket"));
-	}
 }

@@ -10,7 +10,7 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 	Super::PostLogin(NewPlayer);
 
 	if (PlayersNum == 0)
-		GetWorldTimerManager().SetTimer(LobbyTimeOut, this, &ALobbyGameMode::LobbyTimeOutFunc, 180, false);
+		GetWorldTimerManager().SetTimer(LobbyTimeOut, this, &ALobbyGameMode::GameModeTimeOutFunc, 180, false);
 
 	++PlayersNum;
 
@@ -38,19 +38,4 @@ void ALobbyGameMode::Logout(AController* Exiting)
 	Super::Logout(Exiting);
 
 	--PlayersNum;
-}
-
-void ALobbyGameMode::LobbyTimeOutFunc()
-{
-	UWorld* World = GetWorld();
-	if (!ensure(World != nullptr)) return;
-
-	if (UCaptureTheFlagGameInstance* GameInstance = GetGameInstance<UCaptureTheFlagGameInstance>())
-	{
-		GameInstance->SubsystemManager->DestroySession();
-	}
-
-	FString InURL = "/Game/Maps/MainMenu";
-	bUseSeamlessTravel = true;
-	World->ServerTravel(InURL);
 }
