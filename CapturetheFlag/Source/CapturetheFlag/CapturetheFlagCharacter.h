@@ -33,6 +33,15 @@ class ACapturetheFlagCharacter : public ACharacter, public IDamageInterface
 	UPROPERTY(VisibleDefaultsOnly, Category=Mesh)
 	USkeletalMeshComponent* Mesh1P;
 
+	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
+	USkeletalMeshComponent* MeshTP;
+
+	UPROPERTY(EditDefaultsOnly)
+	class UMaterial* RedMaterial;
+
+	UPROPERTY(EditDefaultsOnly)
+	class UMaterial* BlueMaterial;
+
 	/** Gun mesh: 1st person view (seen only by self) */
 	UPROPERTY(VisibleDefaultsOnly, Category = Mesh)
 	USkeletalMeshComponent* FP_Gun;
@@ -94,6 +103,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	UAnimMontage* FireAnimation;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
+	UAnimMontage* DamageAnimation;
+
 	/** Whether to use motion controller location for aiming. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = Gameplay)
 	uint8 bUsingMotionControllers : 1;
@@ -104,7 +116,7 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadwrite, Category = Health)
 	float PlayerHealth = 100.f;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Health)
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = Health)
 	float CurrentPlayerHealth;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = Flag)
@@ -112,6 +124,13 @@ public:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Replicated, Category = Flag)
 	class AFlag* CarryingFlag = nullptr;
+
+	FTimerHandle RespawnTimerHandle;
+
+	UPROPERTY(EditDefaultsOnly,Category = Respawn)
+	float RespawnTime = 5.f;
+
+	FTransform SpawnTransform;
 
 protected:
 	
@@ -157,6 +176,26 @@ public:
 	void Server_Fire();
 	void Server_Fire_Implementation();
 
+	UFUNCTION(Server, Reliable)
+	void Server_PlayAnimMontage(UAnimMontage* AnimMontage);
+	void Server_PlayAnimMontage_Implementation(UAnimMontage* AnimMontage);
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayAnimMontage(UAnimMontage* AnimMontage);
+	void Multicast_PlayAnimMontage_Implementation(UAnimMontage* AnimMontage);
+
+	UFUNCTION(Server, Reliable)
+	void Server_PlayerDead();
+	void Server_PlayerDead_Implementation();
+
+	UFUNCTION(NetMulticast, Reliable)
+	void Multicast_PlayerDead();
+	void Multicast_PlayerDead_Implementation();
+
+	UFUNCTION(Client, Reliable)
+	void Client_PlayerRespawn();
+	void Client_PlayerRespawn_Implementation();
+
 	virtual void DeliverDamage(float DamageAmount, AActor* DamageCauser) override;
 	
 protected:
@@ -180,6 +219,8 @@ public:
 
 private:
 	void ResetHealth();
+
+	void AfterPosses();
 
 
 };

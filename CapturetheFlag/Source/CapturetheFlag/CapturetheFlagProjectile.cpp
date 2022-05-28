@@ -40,6 +40,7 @@ ACapturetheFlagProjectile::ACapturetheFlagProjectile()
 
 void ACapturetheFlagProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* OtherActor, UPrimitiveComponent* OtherComp, FVector NormalImpulse, const FHitResult& Hit)
 {
+	if (!HasAuthority()) return;
 	
 	if ((OtherActor != nullptr) && (OtherActor != this) && (OtherComp != nullptr))
 	{
@@ -57,6 +58,7 @@ void ACapturetheFlagProjectile::OnHit(UPrimitiveComponent* HitComp, AActor* Othe
 
 void ACapturetheFlagProjectile::Server_SendDamage_Implementation(AActor* Actor)
 {
+
 	if(IDamageInterface* DamageTaker = Cast<IDamageInterface>(Actor))
 	{
 		DamageTaker->DeliverDamage(ProjectileDamage, this);

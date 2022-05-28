@@ -7,12 +7,15 @@
 #include "Kismet\GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 
+#include "CapturetheFlagPlayerController.h"
+
 ACapturetheFlagGameMode::ACapturetheFlagGameMode()
 	: Super()
 {
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/FirstPersonCPP/Blueprints/FirstPersonCharacter"));
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
+	PlayerControllerClass = ACapturetheFlagPlayerController::StaticClass();
 
 	// use our custom HUD class
 	HUDClass = ACapturetheFlagHUD::StaticClass();
@@ -35,4 +38,16 @@ void ACapturetheFlagGameMode::PostLogin(APlayerController* NewPlayer)
 			PlayerStart->PlayerStartTag = (TEXT("Taken"));
 		}
 	}
+}
+
+void ACapturetheFlagGameMode::Server_RespawnRequest_Implementation(FTransform SpawnTransform, ACapturetheFlagPlayerController* PlayerController)
+{
+	if (!PlayerController) return;
+
+	auto SpawnedCharacter =GetWorld()->SpawnActor<ACapturetheFlagCharacter>(DefaultPawnClass, SpawnTransform);
+	PlayerController->Possess(SpawnedCharacter);
+}
+
+void ACapturetheFlagGameMode::AfterSpawnDelegate(ACapturetheFlagCharacter* Player, ACapturetheFlagPlayerController* PlayerController)
+{
 }

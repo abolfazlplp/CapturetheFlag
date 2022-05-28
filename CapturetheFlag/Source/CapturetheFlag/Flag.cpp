@@ -80,6 +80,8 @@ void AFlag::Server_DropFlag_Implementation(ACapturetheFlagCharacter* Player)
 
 void AFlag::Multicast_DropFlag_Implementation(ACapturetheFlagCharacter* Player)
 {
+	if (!Player) return;
+
 	Mesh->SetVisibility(true);
 	BoxCollision->Activate(true);
 	SetActorTransform(Player->GetActorTransform());

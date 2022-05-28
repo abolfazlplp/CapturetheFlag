@@ -15,6 +15,13 @@ public:
 	ACapturetheFlagGameMode();
 
 	virtual void PostLogin(APlayerController* NewPlayer) override;
+
+	UFUNCTION(Server, Reliable)
+	void Server_RespawnRequest(FTransform SpawnTransform, class ACapturetheFlagPlayerController* PlayerController);
+	void Server_RespawnRequest_Implementation(FTransform SpawnTransform,class ACapturetheFlagPlayerController* PlayerController);
+
+	UFUNCTION()
+	void AfterSpawnDelegate(ACapturetheFlagCharacter* Player, class ACapturetheFlagPlayerController* PlayerController);
 };
 
 

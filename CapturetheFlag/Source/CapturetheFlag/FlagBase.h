@@ -44,10 +44,6 @@ public:
 	virtual void Server_SetTeamScore(class ACapturetheFlagCharacter* Player);
 	virtual void Server_SetTeamScore_Implementation(class ACapturetheFlagCharacter* Player);
 
-	UFUNCTION(BlueprintCallable, NetMulticast, Reliable)
-	virtual void Multicast_SetTeamScore(class ACapturetheFlagCharacter* Player);
-	virtual void Multicast_SetTeamScore_Implementation(class ACapturetheFlagCharacter* Player);
-
 private:
 	UFUNCTION()
 	void OnComponentBeginOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult);

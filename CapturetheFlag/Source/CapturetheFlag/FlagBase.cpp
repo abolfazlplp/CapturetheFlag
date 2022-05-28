@@ -97,11 +97,6 @@ bool AFlagBase::PlayerBaseHasFlag(ACapturetheFlagCharacter* Player)
 
 void AFlagBase::Server_SetTeamScore_Implementation(ACapturetheFlagCharacter* Player)
 {
-	Multicast_SetTeamScore(Player);
-}
-
-void AFlagBase::Multicast_SetTeamScore_Implementation(ACapturetheFlagCharacter* Player)
-{
 	if (!Player) return;
 
 	TeamScore += 1;
