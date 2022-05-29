@@ -7,9 +7,9 @@
 #include "Kismet\GameplayStatics.h"
 #include "GameFramework/PlayerStart.h"
 
-#include "CapturetheFlagPlayerController.h"
 #include "CapturetheFlag\CaptureTheFlagGameInstance.h"
 #include "SubSystemManager.h"
+#include "CapturetheFlagGameState.h"
 
 ACapturetheFlagGameMode::ACapturetheFlagGameMode()
 	: Super()
@@ -17,10 +17,10 @@ ACapturetheFlagGameMode::ACapturetheFlagGameMode()
 	// set default pawn class to our Blueprinted character
 	static ConstructorHelpers::FClassFinder<APawn> PlayerPawnClassFinder(TEXT("/Game/FirstPersonCPP/Blueprints/FirstPersonCharacter"));
 	DefaultPawnClass = PlayerPawnClassFinder.Class;
-	PlayerControllerClass = ACapturetheFlagPlayerController::StaticClass();
 
 	// use our custom HUD class
 	HUDClass = ACapturetheFlagHUD::StaticClass();
+	GameStateClass = ACapturetheFlagGameState::StaticClass();
 }
 
 void ACapturetheFlagGameMode::PostLogin(APlayerController* NewPlayer)
@@ -53,6 +53,6 @@ void ACapturetheFlagGameMode::GameModeTimeOutFunc()
 	}
 
 	FString InURL = "/Game/Maps/MainMenu";
-	bUseSeamlessTravel = true;
+	bUseSeamlessTravel = false;
 	World->ServerTravel(InURL);
 }

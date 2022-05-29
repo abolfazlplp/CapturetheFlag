@@ -26,7 +26,7 @@ void ALobbyGameMode::PostLogin(APlayerController* NewPlayer)
 		if (!ensure(World != nullptr)) return;
 
 		GetWorldTimerManager().ClearTimer(LobbyTimeOut);
-
+		
 		FString InURL = "/Game/Maps/GamePlay?listen";
 		bUseSeamlessTravel = true;
 		World->ServerTravel(InURL);

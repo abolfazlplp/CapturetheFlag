@@ -194,7 +194,6 @@ public:
 	void Multicast_PlayerDead();
 	void Multicast_PlayerDead_Implementation();
 
-	void PlayerRespawn();
 	UFUNCTION(Server, Reliable)
 	void Server_PlayerRespawn();
 	void Server_PlayerRespawn_Implementation();

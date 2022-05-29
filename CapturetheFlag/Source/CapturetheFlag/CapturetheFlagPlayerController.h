@@ -14,6 +14,7 @@ class CAPTURETHEFLAG_API ACapturetheFlagPlayerController : public APlayerControl
 {
 	GENERATED_BODY()
 
-public:
+protected:
+	virtual void BeginPlay();
 	
 };

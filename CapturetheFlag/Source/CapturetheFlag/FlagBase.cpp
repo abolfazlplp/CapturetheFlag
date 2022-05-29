@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 
 #include "Flag.h"
+#include "CapturetheFlagGameState.h"
 
 // Sets default values
 AFlagBase::AFlagBase()
@@ -100,6 +101,19 @@ void AFlagBase::Server_SetTeamScore_Implementation(ACapturetheFlagCharacter* Pla
 	if (!Player) return;
 
 	TeamScore += 1;
+
+	if (ACapturetheFlagGameState* GameState = GetWorld()->GetGameState<ACapturetheFlagGameState>())
+	{
+		switch (FlagBaseTeam)
+		{
+		case ETeam::Blue:
+			GameState->TeamBlueScore = TeamScore;
+			break;
+		case ETeam::Red:
+			GameState->TeamRedScore = TeamScore;
+			break;
+		}
+	}
 
 	Player->bCarryFlag = false;
 
